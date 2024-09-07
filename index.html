@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        #webcam-container, #label-container {
+            margin-top: 20px;
+        }
+    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+</head>
+<body>
+    
+    <div class="title">SWASST</div>
+    <hr/>
+    <div class="button_div">
+    <input class="input_file" id="imageUpload" type="file" id="imageUpload" accept="image/*" style="margin-top: 10px; display: none">
+    <label class="button_select" for="imageUpload">Select file</label>
+
+</div>
+<div class="pic">
+    <img class="preview" id="img" style="display: none;">
+</div>
+    <div id="webcam-container"></div>
+    <dib class="lable_org">
+        <div id="label-container" class="lable"></div>
+
+    </dib>
+    <div class="report_div" id="report_div">
+    <button class="report_button" onClick="onClickReport()"> Report </button>
+    </div>
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="pages/camp.html" class="nav-link">Campaigns</a>
+        <a href="pages/timing.html" class="nav-link">Timing</a>
+        <a href="pages/ext_links.html" class="nav-link">Links</a>
+    </nav>
+    <script type="text/javascript">
+        function onClickReport(){
+            alert("Reported to the admin.");
+        }
+        const URL = "./model/";
+
+        let model, labelContainer, maxPredictions;
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // Load the model and metadata
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) { // and class labels
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        }
+
+        async function predict(imgElement) {
+            if (!imgElement) return;
+
+            const prediction = await model.predict(imgElement);
+            if (prediction[0].probability > 0.90) {
+                labelContainer.childNodes[0].innerHTML = "Recyclable";
+            } else if (prediction[1].probability > 0.90) {
+                labelContainer.childNodes[0].innerHTML = "Non-Recyclable";
+            } else {
+                labelContainer.childNodes[0].innerHTML = "Not Sure";
+            }
+            console.log(prediction[0].probability.toFixed(2));
+        }
+
+        // Handle image upload
+        document.getElementById('imageUpload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const imgElement = document.getElementById('img');
+                const reportElement = document.getElementById('report_div');
+                // Use window.URL.createObjectURL or fallback to webkitURL
+                imgElement.src = (window.URL || window.webkitURL).createObjectURL(file);
+                imgElement.onload = async () => {
+                    // Ensure image is loaded before prediction
+                    await predict(imgElement);
+                };
+                imgElement.style.display = 'block'; // Display image for preview
+                reportElement.style.display = 'flex';
+            }
+        });
+
+        init();
+    </script>
+    
+</body>
+</html>
